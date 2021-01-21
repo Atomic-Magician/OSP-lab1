@@ -259,9 +259,8 @@ int check_file(char * pt) {
     in_opts = NULL;
     rez = -1;
     rez_count = func_count = 0;;
-
     for (int i = OPTS_COUNT; i < long_opts_count; i++)  {
-        if (long_opts[i].flag != NULL){
+        if (long_opts[i].flag != NULL || long_opts[i].flag == NULL && long_opts[i].has_arg == no_argument){
             plug_id = plugin_id_array[i - OPTS_COUNT];
             if (old_plug_id != plug_id) {
                 if (old_plug_id != -1) {
@@ -275,7 +274,9 @@ int check_file(char * pt) {
 
                 }
                 in_opts_count = 1;
+                //printf("before process_file\n");
                 process_file = plugin_list[plug_id] -> plugin_process_file;
+                //printf("after process_file\n");
             }
             else
                 in_opts_count++;

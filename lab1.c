@@ -173,7 +173,7 @@ int main(int argc, char *argv[]) {
                 if (long_opts[option_index].flag == NULL) {
                     flags.long_opt++;
                     //printf("option %s", long_opts[option_index].name);
-                    if (optarg){
+                    if (optarg && long_opts[option_index].has_arg == required_argument){
 
                         long_opts[option_index].flag = (int *)strdup(optarg);
                         //printf(" with arg %s", (char *)long_opts[option_index].flag);
@@ -199,8 +199,10 @@ int main(int argc, char *argv[]) {
                 file_count = search_for_files(search_dir);
                 if (file_count == -1) {
                     fprintf(stderr, "Error: can't open '%s'\n", search_dir);
+                    printf("Invalid derictory name '%s'\n", search_dir);
                 }
-                printf("%d file(s) found\n", file_count);
+                else
+                    printf("%d file(s) found\n", file_count);
             }
             else {
                 printf("No option for searching found\n");
