@@ -243,6 +243,7 @@ int search_for_files(char * pt) {
 }
 
 int check_file(char * pt) {
+    int i;
     int old_plug_id, plug_id, in_opts_count, rez, func_count, rez_count;
     char path[STR_LEN];
     char out_buff[STR_LEN];
@@ -259,15 +260,17 @@ int check_file(char * pt) {
     in_opts = NULL;
     rez = -1;
     rez_count = func_count = 0;;
-    for (int i = OPTS_COUNT; i < long_opts_count; i++)  {
-        if (long_opts[i].flag != NULL || long_opts[i].flag == NULL && long_opts[i].has_arg == no_argument){
+
+    for (i = OPTS_COUNT; i < long_opts_count; i++)  {   //проходим по списку опций
+        if (long_opts[i].flag != NULL){ //смотрим, у какой опции заполнен флаг(т. е. она вызывалась)
+            //printf("Используется: %s\n", long_opts[i].name);
             plug_id = plugin_id_array[i - OPTS_COUNT];
-            if (old_plug_id != plug_id) {
+            if (old_plug_id != plug_id) { //если новый id обновляем process_file
                 if (old_plug_id != -1) {
-                    func_count++;
+                    func_count++;       //если НЕ первый полученный id - выполняем process_file предыдущего id
                     rez = process_file(path, &in_opts, (size_t)in_opts_count, out_buff, STR_LEN);
                     if(rez < 0)
-                        fprintf(stderr, "Error: process_file\n");
+                        fprintf(stderr, "Error %s(%d): process_file %s\n", in_opts[0].name, rez, path);
                     else
                         if (rez == 0)
                             rez_count++;
@@ -280,9 +283,10 @@ int check_file(char * pt) {
             }
             else
                 in_opts_count++;
+
             in_opts = (struct option *)realloc(in_opts ,in_opts_count * sizeof(struct option));
             if (in_opts == NULL) {
-                fprintf(stderr, "Error: realloc in_opts\n");
+                fprintf(stderr, "Error: realloc in_opts \n");
                 return -1;
             }
 
@@ -294,18 +298,16 @@ int check_file(char * pt) {
             old_plug_id = plug_id;
         }
     }
-
-    free(in_opts);
-
     func_count++;
     rez = process_file(path, &in_opts, (size_t)in_opts_count, out_buff, STR_LEN);
+
     if(rez < 0)
-        fprintf(stderr, "Error: process_file\n");
+        fprintf(stderr, "Error %s(%d): process_file %s\n", in_opts[0].name, rez, path);
     else
         if (rez == 0)
             rez_count++;
-
-    if ((rez_count <= func_count && flags.C == 0 && rez_count > 0) || (rez_count == func_count && flags.C == 1))
+    free(in_opts);
+    if ((rez_count <= func_count && cond_val == 1 && rez_count > 0) || (rez_count == func_count && cond_val == 0))
         return 0;
     else
         return -1;
@@ -323,6 +325,24 @@ int make_logfile(char * pt) {
         fprintf(stderr, "Error: creating log file");
         return -1;
     }
+}
+
+int change_condition(char * cond) {
+    char * condition;
+
+    condition = strdup(cond);
+    if (strcasecmp(condition, "AND") == 0) {
+        cond_val = 0;
+        free(condition);
+        return 0;
+    }
+    if (strcasecmp(condition, "OR") == 0) {
+        cond_val = 1;
+        free(condition);
+        return 0;
+    }
+    free(condition);
+    return -1;
 }
 
 int free_all() {

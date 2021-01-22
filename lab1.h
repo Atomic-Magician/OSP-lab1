@@ -29,11 +29,11 @@ struct plugin {
             size_t out_buff_len);
 };
 
+unsigned char cond_val;
 char * version;
 char * search_dir;
 char * plugin_dir;
 char * log_path;
-unsigned char cond;
 int long_opts_count;
 int plugin_count;
 int * plugin_id_array;
@@ -46,6 +46,7 @@ int add_to_long_opts(const char * name, int has_arg, int * flag, int val);
 int search_for_plugins(char * path);
 int attach_plugin(char * plugin_path);
 int make_logfile(char * log_path);
+int change_condition(char * conditon);
 void show_help(void);
 int search_for_files(char * path);
 int check_file(char * path);

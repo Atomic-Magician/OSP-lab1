@@ -15,13 +15,13 @@ int main(int argc, char *argv[]) {
     search_dir = NULL;
     plugin_dir = NULL;
     log_path = NULL;
-    cond = 0;
     version = "1.0.0";
     plugin_id_array = NULL;
     long_opts_count = 0;
     long_opts = (struct option *)calloc(OPTS_COUNT + 1, sizeof(struct option));
     plugin_count = 0;
     plugin_list = NULL;
+    cond_val = 0; //AND
     flags.P = flags.l = flags.N = flags.h = flags.v = flags.C = flags.long_opt = flags.wrong_opt = 0;
 
     if (long_opts == NULL) {
@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 
     while (1) {
         option_index = 0;
-        opt = getopt_long(argc, argv, "-:P:l:vh", long_opts, &option_index);
+        opt = getopt_long(argc, argv, "-:P:l:C:vh", long_opts, &option_index);
         if (opt == -1)
             break;
         switch (opt) {
@@ -50,7 +50,14 @@ int main(int argc, char *argv[]) {
                 }
                 else {
                     flags.P++;
-                    plugin_dir = strdup(optarg);
+                    if (optarg) {
+                        plugin_dir = strdup(optarg);
+                        printf("-P with arg %s\n", optarg);
+                    }
+                    else {
+                        printf("Add derictory name for '-P'\n");
+                        flags.wrong_opt++;
+                    }
                 }
                 break;
             case 'l':
@@ -62,6 +69,27 @@ int main(int argc, char *argv[]) {
                     flags.l++;
                     log_path = strdup(optarg);
 
+                }
+                break;
+            case 'C':
+                if (flags.C) {
+                    flags.wrong_opt++;
+                    printf("'-C' given twice\n");
+                }
+                else {
+                    flags.C++;
+                    if (optarg) {
+                        //printf("option -C with arg %s\n", optarg);
+                        if (change_condition(optarg)) {
+                            fprintf(stderr, "Error: icorrect argument for '-C': %s\n", optarg);
+                            printf("Incorrect conditin for '-C'\n");
+                            flags.wrong_opt++;
+                        }
+                    }
+                    else {
+                        printf("Add conditin for '-C'\n");
+                        flags.wrong_opt++;
+                    }
                 }
                 break;
             case 'v':
@@ -85,21 +113,21 @@ int main(int argc, char *argv[]) {
                 }
                 break;
             case '?':
-                //printf("Incorrect option %s\n", argv[optind]);
-                //free(long_opts);
-                //printf("free(long_opts)\n");
-                //exit(EXIT_FAILURE);
+                break;
+            case ':':
+                printf("Missing argument for '%s'\n", argv[optind-1]);
+                flags.wrong_opt++;
             break;
-            /*case 0:
-                flags.long_opt++;
-                printf("option %s", long_opts[option_index].name);
-                if (optarg)
-                    printf(" with arg %s", optarg);
-                printf("\n");
-                break;*/
             default:
-                printf("?? getopt returned character code %c ??\n", opt);
+                fprintf(stderr, "?? getopt returned character code %c ??\n", opt);
         }
+    }
+
+
+    if (flags.wrong_opt) {
+        printf("Termination...\n");
+        free_all();
+        exit(EXIT_FAILURE);
     }
 
     if (log_path) {
@@ -129,7 +157,7 @@ int main(int argc, char *argv[]) {
     optind = 0;
     while (1) {
         option_index = 0;
-        opt = getopt_long(argc, argv, "+P:l:vhCN", long_opts, &option_index);
+        opt = getopt_long(argc, argv, "+:P:l:C:vhN", long_opts, &option_index);
         if (opt == -1)
             break;
         switch (opt) {
@@ -138,20 +166,8 @@ int main(int argc, char *argv[]) {
             case 'l':
             case 'v':
             case 'h':
-                break;
             case 'C':
-                if (flags.C) {
-                    flags.wrong_opt++;
-                    printf("'-C' given twice\n");
-                }
-                else {
-                    flags.C++;
-                    printf("option -C");
-                    if (optarg)
-                        printf(" with arg %s", optarg);
-                    printf("\n");
-                }
-            break;
+                break;
             case 'N':
                 if (flags.N) {
                     flags.wrong_opt++;
@@ -163,11 +179,12 @@ int main(int argc, char *argv[]) {
                 }
             break;
             case '?':
+                printf("Incorrect option %s\n", argv[optind-1]);
                 flags.wrong_opt++;
-                //printf("Incorrect option %s\n", argv[optind]);
-                //free(long_opts);
-                //printf("free(long_opts)\n");
-                //exit(EXIT_FAILURE);
+            break;
+            case ':':
+                printf("Missing argument for '%s'\n", argv[optind-1]);
+                flags.wrong_opt++;
             break;
             case 0:
                 if (long_opts[option_index].flag == NULL) {
@@ -178,6 +195,8 @@ int main(int argc, char *argv[]) {
                         long_opts[option_index].flag = (int *)strdup(optarg);
                         //printf(" with arg %s", (char *)long_opts[option_index].flag);
                     }
+                    else
+                        long_opts[option_index].flag = (int *)strdup("0");
                     //printf("\n");
                 }
                 else {
