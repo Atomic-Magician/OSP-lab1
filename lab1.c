@@ -15,6 +15,7 @@ int main(int argc, char *argv[]) {
     search_dir = NULL;
     plugin_dir = NULL;
     log_path = NULL;
+    log_fp = stderr;
     version = "1.0.0";
     plugin_id_array = NULL;
     long_opts_count = 0;
@@ -25,7 +26,8 @@ int main(int argc, char *argv[]) {
     flags.P = flags.l = flags.N = flags.h = flags.v = flags.C = flags.long_opt = flags.wrong_opt = 0;
 
     if (long_opts == NULL) {
-        fprintf(stderr, "Ошибка: не выделено места под опции\n");
+        fprintf(log_fp, "Ошибка: не выделено места под опции\n");
+        fflush(log_fp);
         exit(1);
     }
     add_to_long_opts("plugin", required_argument, NULL, 'P');
@@ -81,7 +83,8 @@ int main(int argc, char *argv[]) {
                     if (optarg) {
                         //printf("option -C with arg %s\n", optarg);
                         if (change_condition(optarg)) {
-                            fprintf(stderr, "Error: icorrect argument for '-C': %s\n", optarg);
+                            fprintf(log_fp, "Error: icorrect argument for '-C': %s\n", optarg);
+                            fflush(log_fp);
                             printf("Incorrect conditin for '-C'\n");
                             flags.wrong_opt++;
                         }
@@ -119,7 +122,8 @@ int main(int argc, char *argv[]) {
                 flags.wrong_opt++;
             break;
             default:
-                fprintf(stderr, "?? getopt returned character code %c ??\n", opt);
+                fprintf(log_fp, "?? getopt returned character code %c ??\n", opt);
+                fflush(log_fp);
         }
     }
 
@@ -143,7 +147,8 @@ int main(int argc, char *argv[]) {
         plugin_dir = strdup(".");
     printf("\nPlugin's directory: '%s'\n", plugin_dir);
     if (search_for_plugins(plugin_dir) == -1) {
-        fprintf(stderr, "Error: can't open '%s'\n", plugin_dir);
+        fprintf(log_fp, "Error: can't open '%s'\n", plugin_dir);
+        fflush(log_fp);
         printf("No plugins found in '%s'\n", plugin_dir);
     }
     else {
@@ -216,8 +221,14 @@ int main(int argc, char *argv[]) {
             if (flags.long_opt) {
                 printf("Searching for files in '%s' ...\n", search_dir);
                 file_count = search_for_files(search_dir);
+                if (file_count == -2) {
+                    printf("Error while searching\nTermination...\n");
+                    free_all();
+                    exit(EXIT_FAILURE);
+                }
                 if (file_count == -1) {
-                    fprintf(stderr, "Error: can't open '%s'\n", search_dir);
+                    fprintf(log_fp, "Error: can't open '%s'\n", search_dir);
+                    fflush(log_fp);
                     printf("Invalid derictory name '%s'\n", search_dir);
                 }
                 else
@@ -238,6 +249,7 @@ int main(int argc, char *argv[]) {
     }
 
     free_all();
+    printf("\nHave a nice day!\n");
     exit(EXIT_SUCCESS);
 }
 

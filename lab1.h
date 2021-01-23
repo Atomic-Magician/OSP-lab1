@@ -34,6 +34,7 @@ char * version;
 char * search_dir;
 char * plugin_dir;
 char * log_path;
+FILE * log_fp;
 int long_opts_count;
 int plugin_count;
 int * plugin_id_array;
